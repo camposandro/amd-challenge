@@ -4,6 +4,7 @@ import com.db.awmd.challenge.domain.Account;
 import com.db.awmd.challenge.exception.DuplicateAccountIdException;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,4 +33,8 @@ public class AccountsRepositoryInMemory implements AccountsRepository {
     accounts.clear();
   }
 
+  @Override
+  public void updateAccounts(List<Account> accounts) {
+    accounts.forEach(acc -> this.accounts.put(acc.getAccountId(), acc));
+  }
 }

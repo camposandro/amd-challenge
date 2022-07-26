@@ -1,6 +1,7 @@
 package com.db.awmd.challenge.service;
 
 import com.db.awmd.challenge.domain.Account;
+import com.db.awmd.challenge.exception.InsufficientFundsException;
 import com.db.awmd.challenge.exception.NonexistentAccountException;
 import com.db.awmd.challenge.exception.NotPositiveAmountException;
 import com.db.awmd.challenge.exception.SameOriginAndTargetAccountsException;
@@ -11,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -35,10 +38,10 @@ public class AccountsService {
   }
 
   public void transfer(String fromId, String toId, BigDecimal amount) {
-    validateTransaction(fromId, toId, amount);
-
     Account from = getAccount(fromId);
     Account to = getAccount(toId);
+
+    validateTransaction(from, to, amount);
 
     Account firstLock = from;
     Account secondLock = to;
@@ -50,24 +53,30 @@ public class AccountsService {
 
     synchronized (firstLock) {
       synchronized (secondLock) {
-        from.withdraw(amount);
-        to.deposit(amount);
+        updateBalancesAndNotifyAccountHolders(from, to, amount);
       }
     }
-
-    notifyAccountHolders(from, to, amount);
   }
 
-  private void validateTransaction(String fromId, String toId, BigDecimal amount) {
+  private void validateTransaction(Account from, Account to, BigDecimal amount) {
+    if (Objects.equals(from.getAccountId(), to.getAccountId())) {
+      throw new SameOriginAndTargetAccountsException();
+    }
     if (!(amount.compareTo(BigDecimal.ZERO) > 0)) {
       throw new NotPositiveAmountException();
     }
-    if (Objects.equals(fromId, toId)) {
-      throw new SameOriginAndTargetAccountsException();
+    if (from.getBalance().subtract(amount).compareTo(BigDecimal.ZERO) < 0) {
+      throw new InsufficientFundsException(
+        "Account (ID: " + from.getAccountId() + ") has insufficient funds!");
     }
   }
 
-  private void notifyAccountHolders(Account from, Account to, BigDecimal amount) {
+  private void updateBalancesAndNotifyAccountHolders(Account from, Account to, BigDecimal amount) {
+    from.setBalance(from.getBalance().subtract(amount));
+    to.setBalance(to.getBalance().add(amount));
+
+    accountsRepository.updateAccounts(new ArrayList<>(List.of(from, to)));
+
     notificationService.notifyAboutTransfer(
       from, "Transferred " + amount + " to " + to.getAccountId()
     );

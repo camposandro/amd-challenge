@@ -3,6 +3,7 @@ package com.db.awmd.challenge.repository;
 import com.db.awmd.challenge.domain.Account;
 import com.db.awmd.challenge.exception.DuplicateAccountIdException;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface AccountsRepository {
@@ -12,4 +13,6 @@ public interface AccountsRepository {
   Optional<Account> getAccount(String accountId);
 
   void clearAccounts();
+
+  void updateAccounts(List<Account> accounts);
 }

@@ -1,6 +1,5 @@
 package com.db.awmd.challenge.domain;
 
-import com.db.awmd.challenge.exception.InsufficientFundsException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -31,18 +30,5 @@ public class Account {
     @JsonProperty("balance") BigDecimal balance) {
     this.accountId = accountId;
     this.balance = balance;
-  }
-
-  public void deposit(BigDecimal amount) {
-    this.balance = this.balance.add(amount);
-  }
-
-  public void withdraw(BigDecimal amount) {
-    BigDecimal finalAmount = this.balance.subtract(amount);
-    if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
-      throw new InsufficientFundsException(
-        "Account (ID: " + accountId + ") has insufficient funds!");
-    }
-    this.balance = finalAmount;
   }
 }
